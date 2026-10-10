@@ -1,9 +1,34 @@
-import requests
-import json
-import sys
 import datetime
+import json
+import platform
+import subprocess
+import requests
+import sys
 
-# --- Subnet Mask Helper Functions ---
+# --- Serienummer ophalen functie (Opdracht 8) ---
+def get_serial_number():
+    """Haalt het serienummer van de computer op (voor Windows en Linux)."""
+    try:
+        if platform.system() == "Windows":
+            cmd = "wmic bios get serialnumber"
+            output = subprocess.check_output(cmd, shell=True).decode().split("\n")
+            lines = [line.strip() for line in output if line.strip()]
+            if len(lines) > 1:
+                return lines[1]
+        elif platform.system() == "Linux":
+            with open("/sys/class/dmi/id/product_serial", "r") as f:
+                return f.read().strip()
+    except Exception:
+        pass
+    return "Onbekend"
+
+# Serienummer opslaan in een dictionary
+systeem_info = {
+    "serienummer": get_serial_number()
+}
+print("Serienummer van de PC:", systeem_info["serienummer"])
+
+# --- Subnet Masker Hulpfuncties ---
 netmask_prefixes = {
     '255.255.255.255': '/32', '255.255.255.254': '/31', '255.255.255.252': '/30',
     '255.255.255.248': '/29', '255.255.255.240': '/28', '255.255.255.224': '/27',
@@ -11,7 +36,7 @@ netmask_prefixes = {
 }
 
 def get_net_prefix(p_subnet_mask):
-    return netmask_prefixes.get(p_subnet_mask, "Wrong input")
+    return netmask_prefixes.get(p_subnet_mask, "Verkeerde invoer")
 
 def get_number_ip_hosts(p_prefix):
     pbits = 32 - int(p_prefix[1:])
@@ -19,17 +44,17 @@ def get_number_ip_hosts(p_prefix):
 
 print("Subnet test /27:", get_number_ip_hosts('/27'), "hosts")
 
-# --- Fetch My IP Address ---
+# --- Mijn IP-adres ophalen ---
 now = datetime.datetime.now()
-print("\nCurrent Time:", now)
+print("\nHuidige tijd:", now)
 
 try:
     r = requests.get("https://api.ipify.org?format=json", timeout=10)
     if r.status_code == 200:
         ip_json = r.json()
-        print("JSON response:", json.dumps(ip_json))
-        print("IP Address:", ip_json.get("ip"))
+        print("JSON-antwoord:", json.dumps(ip_json))
+        print("IP-adres:", ip_json.get("ip"))
     else:
-        print("Error fetching IP:", r.status_code)
+        print("Fout bij het ophalen van IP:", r.status_code)
 except Exception as e:
-    print("Request failed:", e)
+    print("Aanvraag mislukt:", e)
